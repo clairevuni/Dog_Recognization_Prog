@@ -1,11 +1,14 @@
+#model.py
 from tensorflow.keras import applications
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
+from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout, Flatten, GaussianNoise
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.regularizers import l2
 import numpy as np
 from glob import glob
 import os
 import matplotlib.pyplot as plt
+
 
 def create_dog_breed_classifier_model(img_width, img_height, channels, num_classes):
     # Load InceptionV3 architecture with fully connected layers for dog breed classification
@@ -27,24 +30,21 @@ def create_dog_breed_classifier_model(img_width, img_height, channels, num_class
 
     return model
 
+
 if __name__ == "__main__":
-    img_width, img_height = 299, 299  # Update input shape
+    img_width, img_height = 299, 299 
     channels = 3
 
-    # List of dog breed names
+
     base_folder = "C:/Users/39334/Desktop/MULTIMEDIA MAG/Dog_Recognization"
     train_folder = os.path.join(base_folder, "train")
     dog_names = [item.split(os.sep)[-1] for item in sorted(glob(os.path.join(train_folder, "*")))]
 
-    num_classes = len(dog_names)  # Number of classes is the number of dog breeds
+    num_classes = len(dog_names) 
 
-    # Create the model with dropout
     model = create_dog_breed_classifier_model(img_width, img_height, channels, num_classes)
-
-    # Display the model architecture
     model.summary()
 
-    # Create data generators for training and validation
     batch_size = 32
     train_datagen = ImageDataGenerator(
         rescale=1./255,
@@ -79,14 +79,13 @@ if __name__ == "__main__":
         seed=1337
     )
 
-    # Setup History callback to record metrics during training
+
     history = model.fit(train_generator, epochs=2, validation_data=validation_generator)
-
-
-    # Plot training history
+    model.save("dog_breed_classifier_model_with_dropout_trained.h5")
+    
     plt.plot(history.history['accuracy'], label='Training Accuracy')
     plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
-    plt.ylim([0, 0.99])  # Set the y-axis limit to 0.99
+    plt.ylim([0, 0.99]) 
     plt.xlabel('Epoch')
     plt.legend()
     plt.show()
