@@ -1,4 +1,3 @@
-#prediction.py
 import tkinter as tk
 from tkinter import filedialog, ttk
 from PIL import ImageTk, Image
@@ -7,8 +6,7 @@ from tensorflow.keras.preprocessing import image
 import numpy as np
 import os
 from glob import glob
-
-import matplotlib.pyplot as plt
+from model import create_dog_breed_classifier_model, get_dog_names
 
 def load_and_preprocess_image(image_path, target_size=(299, 299)):
     img = image.load_img(image_path, target_size=target_size)
@@ -17,12 +15,17 @@ def load_and_preprocess_image(image_path, target_size=(299, 299)):
     img_array /= 255.0  # Normalize pixel values to between 0 and 1
     return img_array
 
-def predict_dog_breed(image_path, model, dog_names):
+def predict_dog_breed(image_path, model, dog_names, threshold=0.4):
     img_array = load_and_preprocess_image(image_path)
     predictions = model.predict(img_array)
     predicted_class_index = np.argmax(predictions)
     predicted_dog_breed = dog_names[predicted_class_index]
-    return predicted_dog_breed, predictions
+    predicted_probability = predictions[0][predicted_class_index]
+    
+    if predicted_probability >= threshold:
+        return predicted_dog_breed, predictions
+    else:
+        return "Non è un cane", predictions
 
 def select_image():
     file_path = filedialog.askopenfilename()
@@ -32,22 +35,25 @@ def select_image():
 
 def show_selected_image(file_path):
     img = Image.open(file_path)
-    img = img.resize((250, 250), Image.BICUBIC)  # Correzione qui
+    img = img.resize((250, 250), Image.BICUBIC)
     img = ImageTk.PhotoImage(img)
     panel.config(image=img)
     panel.image = img
+
 
 def predict():
     if image_path.get():
         predicted_breed, predictions = predict_dog_breed(image_path.get(), model, dog_names)
         
-        # Verifica se viene rilevato almeno un cane
-        if "dog" in predicted_breed.lower():
+        threshold = 0.4  # Impostiamo il threshold a 0.4 o qualsiasi altro valore desiderato
+        
+        is_dog = predicted_breed != "Non è un cane" and predictions[0][dog_names.index(predicted_breed)] >= threshold
+        
+        if is_dog:
             predicted_breed_label.config(text=f"Predicted Dog Breed: {predicted_breed}", font=("Arial", 14, "bold"), foreground="#2E8B57")
             predictions_text.config(state=tk.NORMAL)
             predictions_text.delete("1.0", tk.END)
 
-            # Trova gli indici dei primi 3 valori massimi
             top_indices = np.argsort(predictions.ravel())[::-1][:3]
 
             for idx in top_indices:
@@ -55,13 +61,11 @@ def predict():
                 prob = predictions.ravel()[idx] * 100
                 predictions_text.insert(tk.END, f"{breed}: {prob:.2f}%\n", "prediction")
 
-            predictions_text.tag_config("prediction", foreground="#2E8B57")  # Colore del testo per le previsioni
+            predictions_text.tag_config("prediction", foreground="#2E8B57")
             predictions_text.config(state=tk.DISABLED)
         else:
-            predicted_breed_label.config(text="Nessun cane rilevato", font=("Arial", 14, "bold"), foreground="#FF0000")
+            predicted_breed_label.config(text="Non è un cane", font=("Arial", 14, "bold"), foreground="#FF0000")
             predictions_text.config(state=tk.DISABLED)
-
-
 
 root = tk.Tk()
 root.title("Dog Breed Prediction")
@@ -71,7 +75,7 @@ model = load_model("dog_breed_classifier_model_with_dropout_trained.h5")
 
 base_folder = "C:/Users/39334/Desktop/MULTIMEDIA MAG/Dog_Recognization"
 train_folder = os.path.join(base_folder, "train")
-dog_names = [os.path.basename(item) for item in sorted(glob(os.path.join(train_folder, "*")))]
+dog_names = get_dog_names(train_folder)
 
 image_path = tk.StringVar()
 
@@ -80,7 +84,6 @@ select_button.pack(pady=10)
 
 selected_image_label = tk.Label(root, text="Selected Image:", bg="#f0f0f0", font=("Arial", 12))
 selected_image_label.pack()
-
 
 panel = tk.Label(root)
 panel.pack()

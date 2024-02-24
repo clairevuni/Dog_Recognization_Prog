@@ -1,14 +1,11 @@
-#model.py
 from tensorflow.keras import applications
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout, Flatten, GaussianNoise
+from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.regularizers import l2
-import numpy as np
-from glob import glob
+from tensorflow.keras.callbacks import ModelCheckpoint
 import os
 import matplotlib.pyplot as plt
-
+from glob import glob
 
 def create_dog_breed_classifier_model(img_width, img_height, channels, num_classes):
     # Load InceptionV3 architecture with fully connected layers for dog breed classification
@@ -30,22 +27,46 @@ def create_dog_breed_classifier_model(img_width, img_height, channels, num_class
 
     return model
 
+def get_dog_names(train_folder):
+    dog_names = [item.split(os.sep)[-1] for item in sorted(glob(os.path.join(train_folder, "*")))]
+    return dog_names
+
+
+def train_dog_breed_classifier_model(model, train_generator, validation_generator, epochs):
+    # Utilizza ModelCheckpoint per salvare il modello solo se la sua accuratezza di validazione migliora
+    checkpoint = ModelCheckpoint("dog_breed_classifier_model_with_dropout_best.h5", monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
+
+    # Addestra il modello
+    history = model.fit(train_generator, epochs=epochs, validation_data=validation_generator, callbacks=[checkpoint])
+    
+    # Plot dell'andamento dell'addestramento
+    plt.plot(history.history['accuracy'], label='Training Accuracy')
+    plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.show()
+
+    return history
 
 if __name__ == "__main__":
+    # Imposta i parametri per l'addestramento
     img_width, img_height = 299, 299 
     channels = 3
-
-
+    batch_size = 32
+    epochs = 2
+    
     base_folder = "C:/Users/39334/Desktop/MULTIMEDIA MAG/Dog_Recognization"
     train_folder = os.path.join(base_folder, "train")
     dog_names = [item.split(os.sep)[-1] for item in sorted(glob(os.path.join(train_folder, "*")))]
 
     num_classes = len(dog_names) 
 
+    # Carica il modello
     model = create_dog_breed_classifier_model(img_width, img_height, channels, num_classes)
     model.summary()
-
-    batch_size = 32
+    
+    # Carica i generatori di dati
     train_datagen = ImageDataGenerator(
         rescale=1./255,
         shear_range=0.2,
@@ -55,7 +76,7 @@ if __name__ == "__main__":
         width_shift_range=0.2,
         height_shift_range=0.2,
         validation_split=0.2
-)
+    )
 
     train_generator = train_datagen.flow_from_directory(
         train_folder,
@@ -79,15 +100,5 @@ if __name__ == "__main__":
         seed=1337
     )
 
-
-    history = model.fit(train_generator, epochs=2, validation_data=validation_generator)
-    model.save("dog_breed_classifier_model_with_dropout_trained.h5")
-    
-    plt.plot(history.history['accuracy'], label='Training Accuracy')
-    plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
-    plt.ylim([0, 0.99]) 
-    plt.xlabel('Epoch')
-    plt.legend()
-    plt.show()
-
-    print("Model trained and saved successfully.")
+    # Addestra il modello
+    train_dog_breed_classifier_model(model, train_generator, validation_generator, epochs)
