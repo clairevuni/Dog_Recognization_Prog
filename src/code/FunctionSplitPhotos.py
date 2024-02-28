@@ -91,7 +91,7 @@ obj = "dog"
 input_boxes, input_label = get_boxes(obj)
 
 if len(input_boxes) == 0:
-    print("No dog found")
+    print("No dog found") #nessun cane
     
 else:
     transformed_boxes = predictor.transform.apply_boxes_torch(input_boxes, image.shape[:2])

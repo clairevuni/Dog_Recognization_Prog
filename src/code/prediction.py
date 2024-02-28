@@ -12,7 +12,7 @@ def load_and_preprocess_image(image_path, target_size=(299, 299)):
     img = image.load_img(image_path, target_size=target_size)
     img_array = image.img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0)
-    img_array /= 255.0  # Normalize pixel values to between 0 and 1
+    img_array /= 255.0  #
     return img_array
 
 def predict_dog_breed(image_path, model, dog_names, threshold=0.4):
@@ -45,8 +45,7 @@ def predict():
     if image_path.get():
         predicted_breed, predictions = predict_dog_breed(image_path.get(), model, dog_names)
         
-        threshold = 0.4  # Impostiamo il threshold a 0.4 o qualsiasi altro valore desiderato
-        
+        threshold = 0.4  #
         is_dog = predicted_breed != "This is not a dog" and predictions[0][dog_names.index(predicted_breed)] >= threshold
         
         if is_dog:

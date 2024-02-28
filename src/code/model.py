@@ -8,21 +8,20 @@ import matplotlib.pyplot as plt
 from glob import glob
 
 def create_dog_breed_classifier_model(img_width, img_height, channels, num_classes):
-    # Load InceptionV3 architecture with fully connected layers for dog breed classification
     base_model = applications.InceptionV3(input_shape=(299, 299, 3), weights='imagenet', include_top=False)
 
-    # Freeze all pre-trained layers
+    #
     for layer in base_model.layers:
         layer.trainable = False
 
-    # Add a fully connected layer for your classification
+    # 
     model = Sequential()
     model.add(base_model)
     model.add(GlobalAveragePooling2D())
-    model.add(Dropout(0.5))  # Add Dropout layer with dropout rate of 0.5
+    model.add(Dropout(0.5))  # Dropout
     model.add(Dense(num_classes, activation='softmax'))
 
-    # Compile the model
+    # 
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
     return model
@@ -33,13 +32,13 @@ def get_dog_names(train_folder):
 
 
 def train_dog_breed_classifier_model(model, train_generator, validation_generator, epochs):
-    # Utilizza ModelCheckpoint per salvare il modello solo se la sua accuratezza di validazione migliora
+    
     checkpoint = ModelCheckpoint("dog_breed_classifier_model_with_dropout_best.h5", monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
 
-    # Addestra il modello
+    # addestramento
     history = model.fit(train_generator, epochs=epochs, validation_data=validation_generator, callbacks=[checkpoint])
     
-    # Plot dell'andamento dell'addestramento
+    # P
     plt.plot(history.history['accuracy'], label='Training Accuracy')
     plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
     plt.xlabel('Epoch')
@@ -50,7 +49,7 @@ def train_dog_breed_classifier_model(model, train_generator, validation_generato
     return history
 
 if __name__ == "__main__":
-    # Imposta i parametri per l'addestramento
+    
     img_width, img_height = 299, 299 
     channels = 3
     batch_size = 32
@@ -62,11 +61,11 @@ if __name__ == "__main__":
 
     num_classes = len(dog_names) 
 
-    # Carica il modello
+    
     model = create_dog_breed_classifier_model(img_width, img_height, channels, num_classes)
     model.summary()
     
-    # Carica i generatori di dati
+   
     train_datagen = ImageDataGenerator(
         rescale=1./255,
         shear_range=0.2,
@@ -100,5 +99,4 @@ if __name__ == "__main__":
         seed=1337
     )
 
-    # Addestra il modello
     train_dog_breed_classifier_model(model, train_generator, validation_generator, epochs)
